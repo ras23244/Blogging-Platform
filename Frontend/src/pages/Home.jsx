@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, Clock, Users, Tag, Mail } from 'lucide-react';
 import PostCard from '../components/Blog/PostCard';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios'; // <-- Add this import
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
@@ -10,124 +11,17 @@ const Home = () => {
   const [featuredPost, setFeaturedPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('latest');
+  const [popularTags, setPopularTags] = useState([]);
 
-  // Mock data - replace with actual API calls
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockPosts = [
-          {
-            id: '1',
-            title: 'Getting Started with React 19: New Features and Improvements',
-            slug: 'getting-started-react-19',
-            excerpt: 'Explore the latest features in React 19 including concurrent rendering, automatic batching, and new hooks that will revolutionize your development workflow.',
-            content: 'React 19 brings exciting new features...',
-            coverImage: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '1',
-              name: 'Sarah Johnson',
-              username: 'sarahj',
-              avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-15T10:00:00Z',
-            tags: ['React', 'JavaScript', 'Frontend'],
-            likes: 124,
-            comments: 18,
-            views: 1250,
-            isLiked: false,
-            isBookmarked: false
-          },
-          {
-            id: '2',
-            title: 'Building Scalable APIs with Node.js and Express',
-            slug: 'scalable-apis-nodejs-express',
-            excerpt: 'Learn how to build robust, scalable APIs using Node.js and Express with best practices for authentication, validation, and error handling.',
-            content: 'Building scalable APIs requires...',
-            coverImage: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '2',
-              name: 'Michael Chen',
-              username: 'mchen',
-              avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-14T15:30:00Z',
-            tags: ['Node.js', 'Express', 'Backend', 'API'],
-            likes: 89,
-            comments: 12,
-            views: 890,
-            isLiked: true,
-            isBookmarked: false
-          },
-          {
-            id: '3',
-            title: 'The Future of Web Development: Trends to Watch in 2025',
-            slug: 'future-web-development-2025',
-            excerpt: 'Discover the emerging trends and technologies that will shape web development in 2025, from AI integration to new frameworks.',
-            content: 'The web development landscape is constantly evolving...',
-            coverImage: 'https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '3',
-              name: 'Emily Rodriguez',
-              username: 'emilyrod',
-              avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-13T09:15:00Z',
-            tags: ['Web Development', 'Trends', 'Technology'],
-            likes: 156,
-            comments: 24,
-            views: 2100,
-            isLiked: false,
-            isBookmarked: true
-          },
-          {
-            id: '4',
-            title: 'Mastering CSS Grid: Advanced Layout Techniques',
-            slug: 'mastering-css-grid-advanced',
-            excerpt: 'Take your CSS Grid skills to the next level with advanced techniques for creating complex, responsive layouts.',
-            content: 'CSS Grid is a powerful layout system...',
-            author: {
-              id: '4',
-              name: 'David Kim',
-              username: 'davidk',
-              avatar: null
-            },
-            publishedAt: '2025-01-12T14:20:00Z',
-            tags: ['CSS', 'Grid', 'Layout', 'Frontend'],
-            likes: 67,
-            comments: 8,
-            views: 540,
-            isLiked: false,
-            isBookmarked: false
-          },
-          {
-            id: '5',
-            title: 'Database Design Best Practices for Modern Applications',
-            slug: 'database-design-best-practices',
-            excerpt: 'Learn essential database design principles and best practices for building efficient, scalable applications.',
-            content: 'Good database design is crucial...',
-            coverImage: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '5',
-              name: 'Lisa Wang',
-              username: 'lisaw',
-              avatar: 'https://images.pexels.com/photos/762020/pexels-photo-762020.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-11T11:45:00Z',
-            tags: ['Database', 'SQL', 'Backend'],
-            likes: 92,
-            comments: 15,
-            views: 780,
-            isLiked: false,
-            isBookmarked: false
-          }
-        ];
-        
-        setPosts(mockPosts);
-        setFeaturedPost(mockPosts[0]);
+        // Fetch all posts from backend
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/posts`);
+        setPosts(res.data.data);
+        console.log('Fetched posts:', res.data.data);
+        setFeaturedPost(res.data.data[0] || null);
       } catch (error) {
         console.error('Failed to fetch posts:', error);
       } finally {
@@ -135,18 +29,36 @@ const Home = () => {
       }
     };
 
+    const fetchTags = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/tags`);
+        setPopularTags(res.data.data.map(tag => tag.name));
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    };
+
     fetchPosts();
+    fetchTags();
   }, []);
+
+  const handleTagClick = async (tag) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/tags/${tag}/posts`);
+      setPosts(res.data.data);
+      setFeaturedPost(res.data.data[0] || null);
+    } catch (error) {
+      console.error('Failed to fetch posts by tag:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const tabs = [
     { id: 'latest', label: 'Latest', icon: Clock },
     { id: 'trending', label: 'Trending', icon: TrendingUp },
     { id: 'following', label: 'Following', icon: Users, requiresAuth: true },
-  ];
-
-  const popularTags = [
-    'JavaScript', 'React', 'Node.js', 'Python', 'CSS', 'TypeScript', 
-    'Vue.js', 'Angular', 'Backend', 'Frontend', 'Database', 'API'
   ];
 
   if (loading) {
@@ -202,7 +114,7 @@ const Home = () => {
           {/* Posts List */}
           <div className="space-y-8">
             {posts.slice(1).map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post._id} post={post} />
             ))}
           </div>
 
@@ -229,13 +141,13 @@ const Home = () => {
               </div>
               <div className="flex flex-wrap gap-3">
                 {popularTags.map((tag) => (
-                  <Link
+                  <button
                     key={tag}
-                    to={`/tag/${tag.toLowerCase()}`}
+                    onClick={() => handleTagClick(tag)}
                     className="badge-primary hover:bg-primary-200 dark:hover:bg-primary-800/50 transition-all duration-200 hover-scale"
                   >
                     {tag}
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
+import axios from 'axios'; // Add this import
 
 const AuthContext = createContext();
 
@@ -43,39 +44,67 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   useEffect(() => {
-    // Check for stored auth token on app load
-    const token = localStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData');
-    
-    if (token && userData) {
+    const fetchUser = async () => {
+      dispatch({ type: 'SET_LOADING', payload: true });
       try {
-        const user = JSON.parse(userData);
-        dispatch({ type: 'LOGIN', payload: user });
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          dispatch({ type: 'SET_LOADING', payload: false });
+          return;
+        }
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/auth/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        dispatch({ type: 'LOGIN', payload: response.data.data });
       } catch (error) {
         localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: 'LOGOUT' });
       }
-    } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
+    };
+    fetchUser();
   }, []);
 
-  const login = (userData, token) => {
+  const login = async (userData, token) => {
     localStorage.setItem('authToken', token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    dispatch({ type: 'LOGIN', payload: userData });
+    // Fetch user from backend to ensure fresh data
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/auth/me`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      dispatch({ type: 'LOGIN', payload: response.data.data });
+    } catch (error) {
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-    dispatch({ type: 'LOGOUT' });
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.get(
+        `${import.meta.env.VITE_API_URL}/auth/logout`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+    } catch (error) {
+      // Optionally handle error (e.g., network issues)
+    } finally {
+      localStorage.removeItem('authToken');
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   const updateProfile = (profileData) => {
     const updatedUser = { ...state.user, ...profileData };
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
     dispatch({ type: 'UPDATE_PROFILE', payload: profileData });
   };
 

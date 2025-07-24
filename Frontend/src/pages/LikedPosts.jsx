@@ -3,6 +3,7 @@ import { Heart, Search, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PostCard from '../components/Blog/PostCard';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios'; // <-- Add this import
 
 const LikedPosts = () => {
   const { user } = useAuth();
@@ -12,100 +13,21 @@ const LikedPosts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [sortBy, setSortBy] = useState('recent');
+  const [allTags, setAllTags] = useState([]);
 
   useEffect(() => {
     const fetchLikedPosts = async () => {
       setLoading(true);
       try {
-        // Mock API call - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockLikedPosts = [
+        const token = localStorage.getItem('authToken');
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users/liked`,
           {
-            id: '1',
-            title: 'Building Scalable APIs with Node.js and Express',
-            slug: 'scalable-apis-nodejs-express',
-            excerpt: 'Learn how to build robust, scalable APIs using Node.js and Express with best practices for authentication, validation, and error handling.',
-            coverImage: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '2',
-              name: 'Michael Chen',
-              username: 'mchen',
-              avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-14T15:30:00Z',
-            likedAt: '2025-01-15T09:20:00Z',
-            tags: ['Node.js', 'Express', 'Backend', 'API'],
-            likes: 89,
-            comments: 12,
-            views: 890,
-            isLiked: true,
-            isBookmarked: false
-          },
-          {
-            id: '2',
-            title: 'Advanced React Patterns: Compound Components and Render Props',
-            slug: 'advanced-react-patterns',
-            excerpt: 'Master advanced React patterns to build more flexible and reusable components in your applications.',
-            author: {
-              id: '3',
-              name: 'Emily Rodriguez',
-              username: 'emilyrod',
-              avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-13T11:15:00Z',
-            likedAt: '2025-01-14T16:45:00Z',
-            tags: ['React', 'JavaScript', 'Frontend', 'Patterns'],
-            likes: 156,
-            comments: 24,
-            views: 2100,
-            isLiked: true,
-            isBookmarked: true
-          },
-          {
-            id: '3',
-            title: 'Database Optimization Techniques for High-Performance Applications',
-            slug: 'database-optimization-techniques',
-            excerpt: 'Discover proven techniques to optimize your database queries and improve application performance.',
-            coverImage: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '4',
-              name: 'David Kim',
-              username: 'davidk',
-              avatar: null
-            },
-            publishedAt: '2025-01-12T14:20:00Z',
-            likedAt: '2025-01-13T10:30:00Z',
-            tags: ['Database', 'SQL', 'Performance', 'Backend'],
-            likes: 92,
-            comments: 15,
-            views: 780,
-            isLiked: true,
-            isBookmarked: false
-          },
-          {
-            id: '4',
-            title: 'Modern CSS Techniques: Grid, Flexbox, and Custom Properties',
-            slug: 'modern-css-techniques',
-            excerpt: 'Learn how to use modern CSS features to create beautiful, responsive layouts with less code.',
-            author: {
-              id: '5',
-              name: 'Lisa Wang',
-              username: 'lisaw',
-              avatar: 'https://images.pexels.com/photos/762020/pexels-photo-762020.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-11T09:45:00Z',
-            likedAt: '2025-01-12T14:20:00Z',
-            tags: ['CSS', 'Frontend', 'Layout', 'Design'],
-            likes: 134,
-            comments: 19,
-            views: 1450,
-            isLiked: true,
-            isBookmarked: false
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
           }
-        ];
-        
-        setLikedPosts(mockLikedPosts);
+        );
+        setLikedPosts(res.data.data);
       } catch (error) {
         console.error('Failed to fetch liked posts:', error);
       } finally {
@@ -113,11 +35,18 @@ const LikedPosts = () => {
       }
     };
 
-    fetchLikedPosts();
-  }, []);
+    const fetchTags = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/tags`);
+        setAllTags(res.data.data.map(tag => tag.name));
+      } catch (error) {
+        console.error('Failed to fetch tags:', error);
+      }
+    };
 
-  // Get all unique tags from liked posts
-  const allTags = [...new Set(likedPosts.flatMap(post => post.tags))];
+    fetchLikedPosts();
+    fetchTags();
+  }, []);
 
   // Filter liked posts based on search and tag
   const filteredPosts = likedPosts.filter(post => {

@@ -3,6 +3,7 @@ import { Bookmark, Search, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PostCard from '../components/Blog/PostCard';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios'; 
 
 const Bookmarks = () => {
   const { user } = useAuth();
@@ -17,75 +18,15 @@ const Bookmarks = () => {
     const fetchBookmarks = async () => {
       setLoading(true);
       try {
-        // Mock API call - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockBookmarks = [
+        const token = localStorage.getItem('authToken');
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users/bookmarks`,
           {
-            id: '1',
-            title: 'The Future of Web Development: Trends to Watch in 2025',
-            slug: 'future-web-development-2025',
-            excerpt: 'Discover the emerging trends and technologies that will shape web development in 2025, from AI integration to new frameworks.',
-            coverImage: 'https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '3',
-              name: 'Emily Rodriguez',
-              username: 'emilyrod',
-              avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-13T09:15:00Z',
-            bookmarkedAt: '2025-01-14T10:30:00Z',
-            tags: ['Web Development', 'Trends', 'Technology'],
-            likes: 156,
-            comments: 24,
-            views: 2100,
-            isLiked: false,
-            isBookmarked: true
-          },
-          {
-            id: '2',
-            title: 'Mastering CSS Grid: Advanced Layout Techniques',
-            slug: 'mastering-css-grid-advanced',
-            excerpt: 'Take your CSS Grid skills to the next level with advanced techniques for creating complex, responsive layouts.',
-            author: {
-              id: '4',
-              name: 'David Kim',
-              username: 'davidk',
-              avatar: null
-            },
-            publishedAt: '2025-01-12T14:20:00Z',
-            bookmarkedAt: '2025-01-13T16:45:00Z',
-            tags: ['CSS', 'Grid', 'Layout', 'Frontend'],
-            likes: 67,
-            comments: 8,
-            views: 540,
-            isLiked: false,
-            isBookmarked: true
-          },
-          {
-            id: '3',
-            title: 'Building Scalable APIs with Node.js and Express',
-            slug: 'scalable-apis-nodejs-express',
-            excerpt: 'Learn how to build robust, scalable APIs using Node.js and Express with best practices for authentication, validation, and error handling.',
-            coverImage: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: {
-              id: '2',
-              name: 'Michael Chen',
-              username: 'mchen',
-              avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            publishedAt: '2025-01-14T15:30:00Z',
-            bookmarkedAt: '2025-01-15T09:20:00Z',
-            tags: ['Node.js', 'Express', 'Backend', 'API'],
-            likes: 89,
-            comments: 12,
-            views: 890,
-            isLiked: true,
-            isBookmarked: true
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
           }
-        ];
-        
-        setBookmarks(mockBookmarks);
+        );
+        setBookmarks(res.data.data);
       } catch (error) {
         console.error('Failed to fetch bookmarks:', error);
       } finally {

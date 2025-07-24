@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios'; // <-- Add this import
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,27 +21,29 @@ const LoginForm = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login
-      const mockUser = {
-        id: '1',
-        name: 'John Doe',
-        username: 'johndoe',
-        email: data.email,
-        role: 'author',
-        avatar: null,
-        bio: 'Passionate writer and tech enthusiast.',
-        joinedAt: new Date().toISOString(),
-      };
-      
-      login(mockUser, 'mock-jwt-token');
+      // Make API call to backend login endpoint
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          email: data.email,
+          password: data.password
+        },
+        { withCredentials: true }
+      );
+
+      // The backend returns { success, token, data: user }
+      const token = response.data.token;
+
+      await login(null, token); // Only pass token, user will be fetched in context
       navigate('/');
     } catch (error) {
+      console.error('Login error:', error);
       setError('root', {
         type: 'manual',
-        message: 'Invalid email or password'
+        message:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Invalid email or password'
       });
     } finally {
       setIsLoading(false);

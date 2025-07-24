@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
 import { 
   MapPin, 
   Calendar, 
@@ -32,67 +33,24 @@ const Profile = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        // Mock API call - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockProfile = {
-          id: '1',
-          name: 'Sarah Johnson',
-          username: 'sarahj',
-          bio: 'Full-stack developer passionate about React, Node.js, and creating amazing user experiences. Love sharing knowledge through writing.',
-          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
-          location: 'San Francisco, CA',
-          website: 'https://sarahjohnson.dev',
-          joinedAt: '2023-01-15T00:00:00Z',
-          followers: 1250,
-          following: 340,
-          postsCount: 42,
-          totalLikes: 3420,
-          totalViews: 125000,
-          socialLinks: {
-            twitter: 'https://twitter.com/sarahj',
-            github: 'https://github.com/sarahj',
-            linkedin: 'https://linkedin.com/in/sarahj'
-          }
-        };
+        // Fetch user profile by username from backend
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users/username/${username}`
+        );
+        setProfile(res.data.data);
+        console.log('Fetched profile:', res.data.data);
 
-        const mockPosts = [
-          {
-            id: '1',
-            title: 'Getting Started with React 19: New Features and Improvements',
-            slug: 'getting-started-react-19',
-            excerpt: 'Explore the latest features in React 19 including concurrent rendering, automatic batching, and new hooks.',
-            coverImage: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=800',
-            author: mockProfile,
-            publishedAt: '2025-01-15T10:00:00Z',
-            tags: ['React', 'JavaScript', 'Frontend'],
-            likes: 124,
-            comments: 18,
-            views: 1250,
-            isLiked: false,
-            isBookmarked: false
-          },
-          {
-            id: '2',
-            title: 'Building Scalable APIs with Node.js and Express',
-            slug: 'scalable-apis-nodejs-express',
-            excerpt: 'Learn how to build robust, scalable APIs using Node.js and Express with best practices.',
-            author: mockProfile,
-            publishedAt: '2025-01-14T15:30:00Z',
-            tags: ['Node.js', 'Express', 'Backend', 'API'],
-            likes: 89,
-            comments: 12,
-            views: 890,
-            isLiked: true,
-            isBookmarked: false
-          }
-        ];
+        // Optionally, fetch user's posts if you have such an endpoint
+        const postsRes = await axios.get(
+          `${import.meta.env.VITE_API_URL}/users/${res.data.data._id}/posts`
+        );
+        console.log('Fetched profile posts:', postsRes.data.data);
+        setPosts(postsRes.data.data);
 
-        setProfile(mockProfile);
-        setPosts(mockPosts);
-        setIsFollowing(false); // Mock following status
+        // Optionally, set following status if your API provides it
+        setIsFollowing(false);
       } catch (error) {
-        console.error('Failed to fetch profile:', error);
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -101,9 +59,32 @@ const Profile = () => {
     fetchProfile();
   }, [username]);
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    // TODO: API call to follow/unfollow user
+  const handleFollow = async () => {
+    if (!profile) return;
+    try {
+      // If already following, you might want to call the unfollow endpoint (not shown here)
+      if (!isFollowing) {
+        const token = localStorage.getItem('authToken');
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/users/${profile._id}/follow`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setIsFollowing(true);
+        setProfile((prev) => ({
+          ...prev,
+          followers: (prev.followers ?? 0) + 1,
+        }));
+      } else {
+        // Optionally handle unfollow here if you have a DELETE endpoint
+      }
+    } catch (error) {
+      // Optionally show error to user
+      console.error('Failed to follow user:', error);
+    }
   };
 
   if (loading) {
@@ -164,7 +145,13 @@ const Profile = () => {
               
               <div className="flex items-center space-x-1">
                 <Calendar className="w-4 h-4" />
-                <span>Joined {new Date(profile.joinedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                <span>
+                  Joined {
+                    profile.createdAt
+                      ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                      : 'Unknown'
+                  }
+                </span>
               </div>
               
               {profile.website && (
@@ -218,13 +205,13 @@ const Profile = () => {
             <div className="flex items-center justify-center md:justify-start space-x-6 text-sm mb-6">
               <div className="text-center">
                 <div className="font-semibold text-gray-900 dark:text-white">
-                  {profile.followers.toLocaleString()}
+                  {(profile.followers ?? 0).toLocaleString()}
                 </div>
                 <div className="text-gray-500 dark:text-gray-400">Followers</div>
               </div>
               <div className="text-center">
                 <div className="font-semibold text-gray-900 dark:text-white">
-                  {profile.following.toLocaleString()}
+                  {(profile.following ?? 0).toLocaleString()}
                 </div>
                 <div className="text-gray-500 dark:text-gray-400">Following</div>
               </div>
@@ -280,7 +267,7 @@ const Profile = () => {
         <div className="card p-6 text-center">
           <Heart className="w-8 h-8 text-red-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            {profile.totalLikes.toLocaleString()}
+            {(profile.totalLikes ?? 0).toLocaleString()}
           </div>
           <div className="text-gray-500 dark:text-gray-400">Total Likes</div>
         </div>
@@ -288,7 +275,7 @@ const Profile = () => {
         <div className="card p-6 text-center">
           <Eye className="w-8 h-8 text-blue-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            {profile.totalViews.toLocaleString()}
+            {(profile.totalViews ?? 0).toLocaleString()}
           </div>
           <div className="text-gray-500 dark:text-gray-400">Total Views</div>
         </div>

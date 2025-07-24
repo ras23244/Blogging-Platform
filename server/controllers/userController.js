@@ -156,7 +156,7 @@ exports.getUserPosts = asyncHandler(async (req, res, next) => {
     status: 'published'
   })
     .populate('author', 'name username avatar')
-    .sort('-publishedAt')
+    .sort('-updatedAt')
     .skip(startIndex)
     .limit(limit);
 

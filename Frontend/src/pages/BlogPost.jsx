@@ -16,9 +16,11 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+
 
 const BlogPost = () => {
-  const { slug } = useParams();
+  const { postId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
@@ -35,152 +37,21 @@ const BlogPost = () => {
     const fetchPost = async () => {
       setLoading(true);
       try {
-        // Mock API call - replace with actual API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockPost = {
-          id: '1',
-          title: 'Getting Started with React 19: New Features and Improvements',
-          slug: 'getting-started-react-19',
-          content: `# Getting Started with React 19
-
-React 19 brings exciting new features and improvements that will revolutionize how we build React applications. In this comprehensive guide, we'll explore the most significant changes and how to leverage them in your projects.
-
-## What's New in React 19?
-
-### 1. Concurrent Rendering Improvements
-
-React 19 introduces significant improvements to concurrent rendering, making your applications more responsive and performant. The new concurrent features allow React to interrupt rendering work to handle more urgent tasks.
-
-\`\`\`javascript
-import { startTransition } from 'react';
-
-function SearchResults({ query }) {
-  const [results, setResults] = useState([]);
-  
-  const handleSearch = (newQuery) => {
-    startTransition(() => {
-      setResults(searchData(newQuery));
-    });
-  };
-  
-  return (
-    <div>
-      {results.map(result => (
-        <SearchResult key={result.id} data={result} />
-      ))}
-    </div>
-  );
-}
-\`\`\`
-
-### 2. Automatic Batching
-
-React 19 extends automatic batching to all updates, not just those inside event handlers. This means better performance out of the box.
-
-### 3. New Hooks
-
-Several new hooks have been introduced to make state management and side effects more intuitive:
-
-- **useId**: Generate unique IDs for accessibility
-- **useTransition**: Mark updates as non-urgent
-- **useDeferredValue**: Defer expensive calculations
-
-## Getting Started
-
-To start using React 19 in your project, update your dependencies:
-
-\`\`\`bash
-npm install react@19 react-dom@19
-\`\`\`
-
-## Migration Guide
-
-Most React 18 applications will work with React 19 without changes, but there are some breaking changes to be aware of:
-
-1. **StrictMode changes**: Some legacy patterns are now deprecated
-2. **Event handling**: Minor changes to synthetic event handling
-3. **TypeScript**: Updated type definitions
-
-## Best Practices
-
-When working with React 19, keep these best practices in mind:
-
-- Use concurrent features judiciously
-- Leverage automatic batching for better performance
-- Adopt the new hooks gradually
-- Test thoroughly when migrating
-
-## Conclusion
-
-React 19 represents a significant step forward for the React ecosystem. The new features and improvements make it easier to build performant, accessible applications. Start experimenting with these features in your projects today!`,
-          excerpt: 'Explore the latest features in React 19 including concurrent rendering, automatic batching, and new hooks that will revolutionize your development workflow.',
-          coverImage: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=1200',
-          author: {
-            id: '1',
-            name: 'Sarah Johnson',
-            username: 'sarahj',
-            avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100',
-            bio: 'Full-stack developer passionate about React and modern web technologies.'
-          },
-          publishedAt: '2025-01-15T10:00:00Z',
-          updatedAt: '2025-01-15T10:00:00Z',
-          tags: ['React', 'JavaScript', 'Frontend', 'Web Development'],
-          likes: 124,
-          comments: 18,
-          views: 1250,
-          readingTime: 8,
-          isLiked: false,
-          isBookmarked: false
-        };
-
-        const mockComments = [
+        const token = localStorage.getItem('authToken');
+        console.log(`Fetching post with id: ${postId}`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/posts/${postId}`,
           {
-            id: '1',
-            content: 'Great article! The concurrent rendering improvements are exactly what I was looking for. Thanks for the detailed examples.',
-            author: {
-              id: '2',
-              name: 'Michael Chen',
-              username: 'mchen',
-              avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            createdAt: '2025-01-15T12:30:00Z',
-            likes: 5,
-            replies: [
-              {
-                id: '2',
-                content: 'Glad you found it helpful! The concurrent features really make a difference in user experience.',
-                author: {
-                  id: '1',
-                  name: 'Sarah Johnson',
-                  username: 'sarahj',
-                  avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100'
-                },
-                createdAt: '2025-01-15T13:15:00Z',
-                likes: 2
-              }
-            ]
-          },
-          {
-            id: '3',
-            content: 'I\'ve been waiting for automatic batching for so long! This is going to improve performance significantly in my apps.',
-            author: {
-              id: '3',
-              name: 'Emily Rodriguez',
-              username: 'emilyrod',
-              avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100'
-            },
-            createdAt: '2025-01-15T14:45:00Z',
-            likes: 3,
-            replies: []
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
           }
-        ];
-
-        setPost(mockPost);
-        setComments(mockComments);
-        setIsLiked(mockPost.isLiked);
-        setIsBookmarked(mockPost.isBookmarked);
-        setLikeCount(mockPost.likes);
+        );
+        setPost(res.data.data);
+        setComments(res.data.data.comments || []);
+        setIsLiked(res.data.data.isLiked);
+        setIsBookmarked(res.data.data.isBookmarked);
+        setLikeCount(res.data.data.likes || 0);
+       
       } catch (error) {
         console.error('Failed to fetch post:', error);
       } finally {
@@ -189,17 +60,177 @@ React 19 represents a significant step forward for the React ecosystem. The new 
     };
 
     fetchPost();
-  }, [slug]);
+  }, [postId]);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-    // TODO: API call to like/unlike post
+ const handleLike = async () => {
+  const token = localStorage.getItem('authToken');
+  
+  // Optimistic UI update
+  setIsLiked(!isLiked);
+  setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+
+  try {
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}/posts/${post._id}/like`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      }
+    );
+
+    if (res.data.success) {
+      setLikeCount(res.data.data.likeCount);
+    }
+
+  } catch (error) {
+    console.error('Failed to like post:', error);
+    setIsLiked(prev => !prev);
+    setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
+  }
+};
+
+  // Submit a comment
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    setIsSubmittingComment(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/comments`,
+        {
+          postId: post._id,
+          content: newComment,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      setComments(prev => [...prev, res.data.data]);
+      setNewComment('');
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    // TODO: API call to bookmark/unbookmark post
+  // Edit a comment
+  const handleEditComment = async (commentId, updatedContent) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await axios.put(
+        `${import.meta.env.VITE_API_URL}/comments/${commentId}`,
+        { content: updatedContent },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      setComments(prev =>
+        prev.map(comment =>
+          comment.id === commentId ? { ...comment, content: res.data.data.content } : comment
+        )
+      );
+    } catch (error) {
+      console.error('Failed to edit comment:', error);
+    }
+  };
+
+  // Like a comment
+  const handleLikeComment = async (commentId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/comments/${commentId}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      setComments(prev =>
+        prev.map(comment =>
+          comment.id === commentId ? { ...comment, likes: res.data.data.likes, isLiked: true } : comment
+        )
+      );
+    } catch (error) {
+      console.error('Failed to like comment:', error);
+    }
+  };
+
+  // Unlike a comment
+  const handleUnlikeComment = async (commentId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await axios.delete(
+        `${import.meta.env.VITE_API_URL}/comments/${commentId}/like`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      setComments(prev =>
+        prev.map(comment =>
+          comment.id === commentId ? { ...comment, likes: res.data.data.likes, isLiked: false } : comment
+        )
+      );
+    } catch (error) {
+      console.error('Failed to unlike comment:', error);
+    }
+  };
+
+  // Delete post
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.delete(
+        `${import.meta.env.VITE_API_URL}/posts/${post._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        }
+      );
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Failed to delete post.');
+    }
+  };
+
+  // Bookmark/Unbookmark post
+  const handleBookmark = async () => {
+    const token = localStorage.getItem('authToken');
+    try {
+      if (!isBookmarked) {
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/users/bookmarks/${post._id}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setIsBookmarked(true);
+      } else {
+        await axios.delete(
+          `${import.meta.env.VITE_API_URL}/users/bookmarks/${post._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setIsBookmarked(false);
+      }
+    } catch (error) {
+      console.error('Failed to update bookmark:', error);
+    }
   };
 
   const handleShare = () => {
@@ -215,42 +246,8 @@ React 19 represents a significant step forward for the React ecosystem. The new 
     }
   };
 
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
-
-    setIsSubmittingComment(true);
-    try {
-      // TODO: API call to submit comment
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const comment = {
-        id: Date.now().toString(),
-        content: newComment,
-        author: user,
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        replies: []
-      };
-      
-      setComments(prev => [...prev, comment]);
-      setNewComment('');
-    } catch (error) {
-      console.error('Failed to submit comment:', error);
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
   const handleEdit = () => {
-    navigate(`/edit/${post.slug}`);
-  };
-
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      // TODO: API call to delete post
-      navigate('/');
-    }
+    navigate(`/edit/${post._id}`);
   };
 
   const isAuthor = user?.id === post?.author.id;
@@ -313,7 +310,7 @@ React 19 represents a significant step forward for the React ecosystem. The new 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-6">
             <div className="flex items-center space-x-1">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
+              <span>{new Date(post.updatedAt).toLocaleDateString()}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Clock className="w-4 h-4" />
@@ -415,7 +412,7 @@ React 19 represents a significant step forward for the React ecosystem. The new 
               }`}
             >
               <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="font-medium">{likeCount}</span>
+              <span className="font-medium">{post.likes?.length || 0}</span>
             </button>
 
             <a
@@ -570,13 +567,18 @@ React 19 represents a significant step forward for the React ecosystem. The new 
                 </div>
                 
                 <div className="flex items-center space-x-4 mt-2 ml-4">
-                  <button className="text-sm text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors">
+                  <button
+                    className={`text-sm ${comment.isLiked ? 'text-red-500' : 'text-gray-500'} hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors`}
+                    onClick={() =>
+                      comment.isLiked
+                        ? handleUnlikeComment(comment.id)
+                        : handleLikeComment(comment.id)
+                    }
+                  >
                     <Heart className="w-4 h-4 inline mr-1" />
                     {comment.likes}
                   </button>
-                  <button className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
-                    Reply
-                  </button>
+                  {/* Add edit button and logic as needed */}
                 </div>
 
                 {/* Replies */}

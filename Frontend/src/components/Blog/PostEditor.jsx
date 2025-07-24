@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Bold, 
   Italic, 
@@ -16,18 +16,20 @@ import {
   Plus
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
 
-const PostEditor = ({ post = null, isEditing = false }) => {
+const PostEditor = ({ isEditing = false }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [title, setTitle] = useState(post?.title || '');
-  const [content, setContent] = useState(post?.content || '');
-  const [excerpt, setExcerpt] = useState(post?.excerpt || '');
-  const [tags, setTags] = useState(post?.tags || []);
+  const { slug } = useParams();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [tags, setTags] = useState([]);
   const [newTag, setNewTag] = useState('');
-  const [coverImage, setCoverImage] = useState(post?.coverImage || '');
+  const [coverImage, setCoverImage] = useState('');
   const [isPreview, setIsPreview] = useState(false);
-  const [isDraft, setIsDraft] = useState(post?.status === 'draft' || false);
+  const [isDraft, setIsDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -45,6 +47,33 @@ const PostEditor = ({ post = null, isEditing = false }) => {
 
     return () => clearTimeout(autoSave);
   }, [title, content, excerpt, tags, coverImage]);
+
+  useEffect(() => {
+    if (isEditing && slug) {
+      const fetchPost = async () => {
+        try {
+          const token = localStorage.getItem('authToken');
+          const res = await axios.get(
+            `${import.meta.env.VITE_API_URL}/posts/slug/${slug}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              withCredentials: true,
+            }
+          );
+          const data = res.data.data;
+          setTitle(data.title || '');
+          setContent(data.content || '');
+          setExcerpt(data.excerpt || '');
+          setTags(data.tags || []);
+          setCoverImage(data.coverImage || '');
+          setIsDraft(data.status === 'draft');
+        } catch (error) {
+          console.error('Failed to fetch post for editing:', error);
+        }
+      };
+      fetchPost();
+    }
+  }, [isEditing, slug]);
 
   const handleSaveDraft = async () => {
     setIsSaving(true);
@@ -67,11 +96,56 @@ const PostEditor = ({ post = null, isEditing = false }) => {
 
     setIsPublishing(true);
     try {
-      // TODO: API call to publish post
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      navigate('/');
+      const token = localStorage.getItem('authToken');
+      let res;
+      if (isEditing && slug) {
+        // Fetch post to get its _id
+        const getRes = await axios.get(
+          `${import.meta.env.VITE_API_URL}/posts/slug/${slug}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        const postId = getRes.data.data._id;
+        // Update post
+        res = await axios.put(
+          `${import.meta.env.VITE_API_URL}/posts/${postId}`,
+          {
+            title,
+            content,
+            excerpt,
+            tags,
+            coverImage,
+            status: 'published'
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+      } else {
+        // Create post
+        res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/posts`,
+          {
+            title,
+            content,
+            excerpt,
+            tags,
+            coverImage,
+            status: 'published'
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+      }
+      navigate(`/posts/${res.data.data._id}`);
     } catch (error) {
       console.error('Failed to publish post:', error);
+      alert('Failed to publish post.');
     } finally {
       setIsPublishing(false);
     }
@@ -100,12 +174,33 @@ const PostEditor = ({ post = null, isEditing = false }) => {
     }, 0);
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // TODO: Upload image to server and get URL
-      const imageUrl = URL.createObjectURL(file);
-      insertFormatting(`![${file.name}](${imageUrl})`);
+      try {
+        const token = localStorage.getItem('authToken');
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/upload/image`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true,
+          }
+        );
+
+        const imageUrl = res.data.data.url;
+        setCoverImage(imageUrl); // Set as cover image
+        insertFormatting(`![${file.name}](${imageUrl})`);
+      } catch (error) {
+        alert('Image upload failed.');
+        console.error(error);
+      }
     }
   };
 

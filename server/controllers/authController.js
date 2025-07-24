@@ -7,8 +7,10 @@ const sendTokenResponse = require('../utils/sendTokenResponse');
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
+
 exports.register = asyncHandler(async (req, res, next) => {
   const { name, username, email, password } = req.body;
+  console.log('Registering user:', { name, username, email });
 
   // Create user
   const user = await User.create({

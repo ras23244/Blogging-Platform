@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, PenTool } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
 
 const SignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,29 +23,35 @@ const SignupForm = () => {
   const password = watch('password');
 
   const onSubmit = async (data) => {
+    console.log('Submitting:', data); // Debugging line
     setIsLoading(true);
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful signup
-      const mockUser = {
-        id: '1',
-        name: data.name,
-        username: data.username,
-        email: data.email,
-        role: 'author',
-        avatar: null,
-        bio: '',
-        joinedAt: new Date().toISOString(),
-      };
-      
-      login(mockUser, 'mock-jwt-token');
+      // Make API call to backend registration endpoint
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/register`,
+        {
+          name: data.name,
+          username: data.username,
+          email: data.email,
+          password: data.password
+        },
+        { withCredentials: true }
+      );
+
+      // The backend returns { success, token, data: user }
+      const user = response.data.data;
+      const token = response.data.token;
+
+      login(user, token);
       navigate('/');
     } catch (error) {
+      console.error('Registration error:', error);
       setError('root', {
         type: 'manual',
-        message: 'Something went wrong. Please try again.'
+        message:
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Something went wrong. Please try again.'
       });
     } finally {
       setIsLoading(false);

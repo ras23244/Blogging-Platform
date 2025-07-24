@@ -11,6 +11,7 @@ import LikedPosts from './pages/LikedPosts';
 import BlogPost from './pages/BlogPost';
 import LoginForm from './components/Auth/LoginForm';
 import SignupForm from './components/Auth/SignupForm';
+import PostEditor from './components/Blog/PostEditor'; // Import the PostEditor component
 
 function App() {
   return (
@@ -25,9 +26,10 @@ function App() {
               <Route path="/bookmarks" element={<Bookmarks />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/liked" element={<LikedPosts />} />
-              <Route path="/post/:slug" element={<BlogPost />} />
+              <Route path="/posts/:postId" element={<BlogPost />} />
               <Route path="/login" element={<LoginForm />} />
               <Route path="/signup" element={<SignupForm />} />
+              <Route path="/edit/:slug" element={<PostEditor isEditing={true} />} /> {/* Add the edit route */}
               {/* Add more routes as needed */}
             </Routes>
           </Layout>

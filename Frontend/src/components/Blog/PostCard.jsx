@@ -2,23 +2,81 @@ import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart, Bookmark, MessageCircle, Share2, Clock, Eye } from 'lucide-react';
 import { useState } from 'react';
+import axios from 'axios';
 
 const PostCard = ({ post, variant = 'default' }) => {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [isBookmarked, setIsBookmarked] = useState(post.isBookmarked || false);
-  const [likeCount, setLikeCount] = useState(post.likes || 0);
+const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
 
-  const handleLike = (e) => {
+
+  const handleLike = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('authToken');
     setIsLiked(!isLiked);
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-    // TODO: API call to like/unlike post
+
+    try {
+      if (!isLiked) {
+        // Like the post
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/posts/${post._id}/like`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setLikeCount(res.data.data.likeCount ?? likeCount + 1);
+      } else {
+        // Unlike the post
+        const res = await axios.delete(
+          `${import.meta.env.VITE_API_URL}/posts/${post._id}/like`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setLikeCount(res.data.data.likeCount ?? likeCount - 1);
+      }
+    } catch (error) {
+      // Revert UI if API fails
+      setIsLiked(prev => !prev);
+      setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
+      console.error('Like/unlike action failed:', error);
+    }
   };
 
-  const handleBookmark = (e) => {
+  const handleBookmark = async (e) => {
     e.preventDefault();
-    setIsBookmarked(!isBookmarked);
-    // TODO: API call to bookmark/unbookmark post
+    const token = localStorage.getItem('authToken');
+    try {
+      if (!isBookmarked) {
+        // Add to bookmarks
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/users/bookmarks/${post._id}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setIsBookmarked(true);
+      } else {
+        // Remove from bookmarks
+        await axios.delete(
+          `${import.meta.env.VITE_API_URL}/users/bookmarks/${post._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+          }
+        );
+        setIsBookmarked(false);
+      }
+    } catch (error) {
+      // Optionally show error to user
+      console.error('Bookmark action failed:', error);
+    }
   };
 
   const handleShare = (e) => {
@@ -40,7 +98,7 @@ const PostCard = ({ post, variant = 'default' }) => {
   if (variant === 'featured') {
     return (
       <article className="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group">
-        <Link to={`/post/${post.slug}`} className="block">
+        <Link to={`/posts/${post._id}`} className="block">
           <div className="aspect-[16/9] overflow-hidden relative">
             <img
               src={post.coverImage || 'https://images.pexels.com/photos/261763/pexels-photo-261763.jpeg?auto=compress&cs=tinysrgb&w=800'}
@@ -61,7 +119,8 @@ const PostCard = ({ post, variant = 'default' }) => {
                   {post.author.name}
                 </p>
                 <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>{formatDistanceToNow(new Date(post.publishedAt))} ago</span>
+                  <span>{formatDistanceToNow(new Date(post.
+updatedAt))} ago</span>
                   <span>•</span>
                   <div className="flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
@@ -148,7 +207,7 @@ const PostCard = ({ post, variant = 'default' }) => {
 
   return (
     <article className="card-interactive p-8 animate-fade-in">
-      <Link to={`/post/${post.slug}`} className="block">
+      <Link to={`/posts/${post._id}`} className="block">
         <div className="flex items-start space-x-6">
           <div className="flex-1">
             <div className="flex items-center space-x-4 mb-4">
@@ -162,7 +221,7 @@ const PostCard = ({ post, variant = 'default' }) => {
                   {post.author.name}
                 </p>
                 <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                  <span>{formatDistanceToNow(new Date(post.publishedAt))} ago</span>
+                  <span>{formatDistanceToNow(new Date(post.updatedAt))} ago</span>
                   <span>•</span>
                   <div className="flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
@@ -223,7 +282,7 @@ const PostCard = ({ post, variant = 'default' }) => {
             className="flex items-center space-x-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-all duration-200 hover-scale"
           >
             <MessageCircle className="w-5 h-5" />
-            <span className="font-medium">{post.comments || 0}</span>
+            <span className="font-medium">{Array.isArray(post.comments) ? post.comments.length : 0}</span>
           </Link>
         </div>
         

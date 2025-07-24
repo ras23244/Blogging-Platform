@@ -72,7 +72,7 @@ const postSchema = new mongoose.Schema({
 });
 
 // Virtual for like count
-postSchema.virtual('likeCount').get(function() {
+postSchema.virtual('likeCount').get(function () {
   return this.likes.length;
 });
 
@@ -85,7 +85,7 @@ postSchema.virtual('commentCount', {
 });
 
 // Create slug from title
-postSchema.pre('save', function(next) {
+postSchema.pre('save', function (next) {
   if (this.isModified('title')) {
     this.slug = slugify(this.title, {
       lower: true,
@@ -96,7 +96,7 @@ postSchema.pre('save', function(next) {
 });
 
 // Calculate reading time
-postSchema.pre('save', function(next) {
+postSchema.pre('save', function (next) {
   if (this.isModified('content')) {
     const wordsPerMinute = 200;
     const wordCount = this.content.split(' ').length;
@@ -106,7 +106,7 @@ postSchema.pre('save', function(next) {
 });
 
 // Set published date when status changes to published
-postSchema.pre('save', function(next) {
+postSchema.pre('save', function (next) {
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
   }
