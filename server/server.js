@@ -10,7 +10,8 @@ const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
-
+const mongodb = require('mongodb');
+const logger = require('./logger');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -27,8 +28,12 @@ const app = express();
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => {
+    logger.info("Connected to MongoDB Atlas");
+  })
+  .catch(err => {
+    logger.error("MongoDB connection error:", err);
+  });
 
 // Security middleware
 app.use(helmet());
@@ -88,7 +93,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  logger.info(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
 });
 
 module.exports = app;
